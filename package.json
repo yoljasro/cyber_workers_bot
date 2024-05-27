@@ -1,0 +1,17 @@
+{
+  "name": "cyber_bot",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@adminjs/express": "^4.0.0",
+    "@adminjs/mongoose": "^4.0.0",
+    "adminjs": "^6.0.0",
+    "express": "^4.17.1",
+    "mongoose": "^5.12.3",
+    "node-telegram-bot-api": "^0.50.0"
+  }
+}
