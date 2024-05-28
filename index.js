@@ -1,138 +1,146 @@
-import TelegramBot from 'node-telegram-bot-api';
-import mongoose from 'mongoose';
-import AdminJS from 'adminjs';
-import AdminJSExpress from '@adminjs/express';
-import { Database, Resource } from '@adminjs/mongoose';
-import express from 'express';
+const { Telegraf } = require('telegraf');
+const mongoose = require('mongoose');
+const express = require('express');
+const AdminBro = require('admin-bro');
+const AdminBroExpress = require('@admin-bro/express');
+const AdminBroMongoose = require('@admin-bro/mongoose');
 
-// Bot tokeningizni bu yerga joylashtiring
-const token = '6522496141:AAGHwK-twlV1FyDAvgFl_iJgq-liXy439zk';
-const bot = new TelegramBot(token, { polling: true });
+// Konfiguratsiya
+const MONGODB_URI = 'mongodb+srv://saidaliyevjasur450:aVlkzGZyrlXDifHz@cyberworkers.1uhivew.mongodb.net/';
+const BOT_TOKEN = '6522496141:AAGHwK-twlV1FyDAvgFl_iJgq-liXy439zk';
+const PORT = 3000;
+const allowedUsers = [1847596793]; // Foydalanuvchi ID'lari
 
-// MongoDB ulanish URL manzili
-const url = 'mongodb+srv://saidaliyevjasur450:mJheljrsOnfTuKFm@cyberworkers.1uhivew.mongodb.net/';
+const app = express();
 
-// Asinxron funktsiya ichida kodni bajarish
-async function main() {
-  // MongoDBga ulanish  
-  await mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
+// MongoDB ulanishi
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
-  // Ishchi modelini yaratish
-  const WorkerSchema = new mongoose.Schema({
-    username: String,
-    action: String,
-    timestamp: Date,
-    fine: Number
-  });
-  const Worker = mongoose.model('Worker', WorkerSchema);
+// Shift modeli
+const ShiftSchema = new mongoose.Schema({
+  workerId: Number,
+  startTime: Date,
+  endTime: Date,
+  late: Boolean,
+  earlyLeave: Boolean
+});
 
-  // AdminJS sozlamalari
-  AdminJS.registerAdapter({ Database, Resource });
-  const adminJs = new AdminJS({
-    resources: [{ resource: Worker }],
-    rootPath: '/admin',
-  });
-  const router = AdminJSExpress.buildRouter(adminJs);
+const Shift = mongoose.model('Shift', ShiftSchema);
 
-  // Express serverni sozlash
-  const app = express();
-  app.use(adminJs.options.rootPath, router);
-  app.listen(3000, () => console.log('Admin panel http://localhost:3000/admin da ishlayapti'));
+// AdminBro sozlash
+AdminBro.registerAdapter(AdminBroMongoose);
 
-  // Foydalanuvchilarni cheklash
-  const allowedUsers = ['jasurbek_s7'];
+const adminBro = new AdminBro({
+  databases: [mongoose],
+  rootPath: '/admin',
+});
 
-  // Ishchi ish vaqti oralig'i
-  const workShifts = {
-    'jasurbek_s7': {
-      start: '07:00',
-      end: '15:00'
-    },
-    'worker2': {
-      start: '15:00',
-      end: '23:00'
-    },
-    'worker3': {
-      start: '23:00',
-      end: '07:00'
-    }
-  };
+const router = AdminBroExpress.buildRouter(adminBro);
+app.use(adminBro.options.rootPath, router);
 
-  // Funksiya vaqti tekshiradi
-  function checkTimeRange(username, currentTime) {
-    const shift = workShifts[username];
-    if (!shift) return false;
+// Telegram botni sozlash
+const bot = new Telegraf(BOT_TOKEN);
 
-    const [startHour, startMinute] = shift.start.split(':').map(Number);
-    const [endHour, endMinute] = shift.end.split(':').map(Number);
+const workers = {
+  1: { startHour: 7, endHour: 15 },
+  2: { startHour: 15, endHour: 23 },
+  3: { startHour: 23, endHour: 7 }
+};
 
-    const shiftStart = new Date(currentTime);
-    shiftStart.setHours(startHour, startMinute, 0, 0);
+bot.use((ctx, next) => {
+  if (allowedUsers.includes(ctx.from.id)) {
+    return next();
+  } else {
+    return ctx.reply('Sizga bu botdan foydalanishga ruxsat berilmagan.');
+  }
+});
 
-    let shiftEnd = new Date(currentTime);
-    shiftEnd.setHours(endHour, endMinute, 0, 0);
-    if (shift.start > shift.end) {
-      shiftEnd.setDate(shiftEnd.getDate() + 1);
-    }
+bot.start((ctx) => {
+  const now = new Date();
+  const currentHour = now.getHours();
 
-    return { shiftStart, shiftEnd };
+  let workerId;
+  if (currentHour >= 7 && currentHour < 15) {
+    workerId = 1;
+  } else if (currentHour >= 15 && currentHour < 23) {
+    workerId = 2;
+  } else {
+    workerId = 3;
   }
 
-  // Bot kelib-ketish vaqtlarini qayd qilish
-  bot.onText(/keldim/i, async (msg) => {
-    const username = msg.from.username;
-    const timestamp = new Date();
+  ctx.reply(`${workerId}-ishchi, ishga keldingizmi yoki ketmoqchimisiz? "keldim" yoki "ketdim" deb yozing.`);
+});
 
-    if (!allowedUsers.includes(username)) {
-      return bot.sendMessage(msg.chat.id, 'Sizga bu botdan foydalanish ruxsati berilmagan.');
+bot.hears('keldim', async (ctx) => {
+  const now = new Date();
+  const currentHour = now.getHours();
+
+  let workerId;
+  if (currentHour >= 7 && currentHour < 15) {
+    workerId = 1;
+  } else if (currentHour >= 15 && currentHour < 23) {
+    workerId = 2;
+  } else {
+    workerId = 3;
+  }
+
+  const shiftStart = new Date();
+  shiftStart.setHours(workers[workerId].startHour, 0, 0, 0);
+
+  if (now > shiftStart) {
+    const diffMinutes = Math.floor((now - shiftStart) / 60000);
+    if (diffMinutes > 10) {
+      await ctx.reply(`Kech keldingiz. 50,000 so'm jarima.`);
+      await new Shift({ workerId, startTime: now, late: true }).save();
+    } else {
+      await new Shift({ workerId, startTime: now, late: false }).save();
+      await ctx.reply(`Siz vaqtida keldingiz, ishingizda muvafaqqiyat!`);
     }
+  } else {
+    await new Shift({ workerId, startTime: now, late: false }).save();
+    await ctx.reply(`Siz vaqtida keldingiz, ishingizda muvafaqqiyat!`);
+  }
+});
 
-    const { shiftStart, shiftEnd } = checkTimeRange(username, timestamp);
+bot.hears('ketdim', async (ctx) => {
+  const now = new Date();
+  const currentHour = now.getHours();
 
-    if (!shiftStart || !shiftEnd) {
-      return bot.sendMessage(msg.chat.id, 'Ish vaqti oralig\'i noto\'g\'ri.');
+  let workerId;
+  if (currentHour >= 7 && currentHour < 15) {
+    workerId = 1;
+  } else if (currentHour >= 15 && currentHour < 23) {
+    workerId = 2;
+  } else {
+    workerId = 3;
+  }
+
+  const shiftEnd = new Date();
+  shiftEnd.setHours(workers[workerId].endHour, 0, 0, 0);
+
+  const lastShift = await Shift.findOne({ workerId }).sort({ startTime: -1 });
+
+  if (lastShift && !lastShift.endTime) {
+    if (now < shiftEnd) {
+      const diffMinutes = Math.floor((shiftEnd - now) / 60000);
+      if (diffMinutes > 10) {
+        await ctx.reply(`Ishni erta tugatdingiz. 50,000 so'm jarima.`);
+        lastShift.earlyLeave = true;
+      }
     }
+    lastShift.endTime = now;
+    await lastShift.save();
+    ctx.reply(`${workerId}-ishchi, siz ishdan ketdingiz.`);
+  } else {
+    ctx.reply(`Iltimos, avval "keldim" deb yozing.`);
+  }
+});
 
-    const lateThreshold = new Date(shiftStart);
-    lateThreshold.setMinutes(lateThreshold.getMinutes() + 10);
+bot.launch();
 
-    const isLate = timestamp > lateThreshold;
-    const fine = isLate ? 50000 : 0;
-
-    const worker = new Worker({ username, action: 'Check-in', timestamp, fine });
-    await worker.save();
-
-    bot.sendMessage(msg.chat.id, `${username}, siz ishga keldingiz vaqtingiz: ${timestamp}. Jarima: ${fine} so'm.`);
-  });
-
-  bot.onText(/ketdim/i, async (msg) => {
-    const username = msg.from.username;
-    const timestamp = new Date();
-
-    if (!allowedUsers.includes(username)) {
-      return bot.sendMessage(msg.chat.id, 'Sizga bu botdan foydalanish ruxsati berilmagan.');
-    }
-
-    const { shiftStart, shiftEnd } = checkTimeRange(username, timestamp);
-
-    if (!shiftStart || !shiftEnd) {
-      return bot.sendMessage(msg.chat.id, 'Ish vaqti oralig\'i noto\'g\'ri.');
-    }
-
-    const earlyLeaveThreshold = new Date(shiftEnd);
-    earlyLeaveThreshold.setMinutes(earlyLeaveThreshold.getMinutes() - 10);
-
-    const isEarly = timestamp < earlyLeaveThreshold;
-    const fine = isEarly ? 50000 : 0;
-
-    const worker = new Worker({ username, action: 'Check-out', timestamp, fine });
-    await worker.save();
-
-    bot.sendMessage(msg.chat.id, `${username}, siz ishdan ketyapsiz vaqtingiz: ${timestamp}. Jarima: ${fine} so'm.`);
-  });
-
-  console.log('Bot ishga tushdi!');
-}
-
-// Asinxron funktsiyani chaqirish
-main().catch(err => console.error(err));
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});

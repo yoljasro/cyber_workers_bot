@@ -1,17 +1,26 @@
 {
-  "name": "cyber_bot",
+  "name": "cyber_workers_bot",
   "version": "1.0.0",
-  "type": "module",
+  "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "nodemon index.js"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "@adminjs/express": "^4.0.0",
-    "@adminjs/mongoose": "^4.0.0",
-    "adminjs": "^6.0.0",
-    "express": "^4.17.1",
-    "mongoose": "^5.12.3",
-    "node-telegram-bot-api": "^0.50.0"
+    "@admin-bro/express": "^3.1.0",
+    "@admin-bro/mongoose": "^1.1.0",
+    "admin-bro": "^4.0.1",
+    "admin-bro-expressjs": "^2.1.1",
+    "admin-bro-mongoose": "^0.5.2",
+    "express": "^4.19.2",
+    "express-formidable": "^1.2.0",
+    "mongoose": "^8.4.0",
+    "node-telegram-bot-api": "^0.66.0",
+    "nodemon": "^3.1.1",
+    "telegraf": "^4.16.3",
+    "tslib": "^2.6.2"
   }
 }
