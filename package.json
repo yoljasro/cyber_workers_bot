@@ -10,17 +10,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@admin-bro/express": "^3.1.0",
-    "@admin-bro/mongoose": "^1.1.0",
-    "admin-bro": "^4.0.1",
+    "@adminjs/express": "^6.1.0",
+    "@adminjs/mongoose": "^4.1.0",
     "admin-bro-expressjs": "^2.1.1",
     "admin-bro-mongoose": "^0.5.2",
+    "adminjs": "^7.8.1",
     "express": "^4.19.2",
     "express-formidable": "^1.2.0",
     "mongoose": "^8.4.0",
     "node-telegram-bot-api": "^0.66.0",
     "nodemon": "^3.1.1",
     "telegraf": "^4.16.3",
+    "telegraf-session-local": "^2.1.1",
     "tslib": "^2.6.2"
   }
 }
