@@ -9,8 +9,8 @@ import * as AdminJSMongoose from '@adminjs/mongoose';
 // Konfiguratsiya
 const MONGODB_URI = 'mongodb+srv://saidaliyevjasur450:aVlkzGZyrlXDifHz@cyberworkers.1uhivew.mongodb.net/';
 const BOT_TOKEN = '6522496141:AAGHwK-twlV1FyDAvgFl_iJgq-liXy439zk';
-const PORT = 3000;
-const allowedUsers = [1847596793]; // Foydalanuvchi ID'lari
+const PORT = 6000;
+const allowedUsers = [1847596793 , 363452247]; // Foydalanuvchi ID'lari
 
 const app = express();
 
@@ -64,9 +64,9 @@ const workers = {
 };
 
 const workerProfiles = {
-  1: 'Birinchi ishchi',
-  2: 'Ikkinchi ishchi',
-  3: 'Uchinchi ishchi'
+  1: 'Birinchi admin',
+  2: 'Ikkinchi admin',
+  3: 'Uchinchi admin'
 };
 
 bot.use((ctx, next) => {
@@ -79,7 +79,7 @@ bot.use((ctx, next) => {
 
 bot.start((ctx) => {
   const keyboard = Markup.keyboard([
-    ['Birinchi ishchi', 'Ikkinchi ishchi', 'Uchinchi ishchi']
+    ['Birinchi admin', 'Ikkinchi admin', 'Uchinchi admin']
   ]).resize();
   ctx.reply('Qaysi profilni tanlaysiz?', keyboard);
 });
@@ -143,7 +143,7 @@ bot.command('ketdim', async (ctx) => {
     }
     lastShift.endTime = now;
     await lastShift.save();
-    ctx.reply(`${workerId}-ishchi, siz ishdan ketdingiz.`);
+    ctx.reply(`${workerId}-admin, siz ishdan ketdingiz.`);
   } else {
     ctx.reply(`Iltimos, avval "keldim" deb yozing.`);
   }
