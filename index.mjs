@@ -11,7 +11,7 @@ import moment from 'moment-timezone';
 const MONGODB_URI = 'mongodb+srv://saidaliyevjasur450:aVlkzGZyrlXDifHz@cyberworkers.1uhivew.mongodb.net/';
 const BOT_TOKEN = '6522496141:AAGHwK-twlV1FyDAvgFl_iJgq-liXy439zk';
 const PORT = 8000;
-const allowedUsers = [1847596793 , 363452247]; // Foydalanuvchi ID'lari
+const allowedUsers = [1847596793 , 363452247 , 6018020548]; // Foydalanuvchi ID'lari
 
 const app = express();
 
