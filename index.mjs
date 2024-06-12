@@ -5,6 +5,7 @@ import express from 'express';
 import AdminJS from 'adminjs';
 import * as AdminJSExpress from '@adminjs/express';
 import * as AdminJSMongoose from '@adminjs/mongoose';
+import moment from 'moment-timezone';
 
 // Konfiguratsiya
 const MONGODB_URI = 'mongodb+srv://saidaliyevjasur450:aVlkzGZyrlXDifHz@cyberworkers.1uhivew.mongodb.net/';
@@ -96,15 +97,14 @@ Object.keys(workerProfiles).forEach(workerId => {
 });
 
 bot.command('keldim', async (ctx) => {
-  const now = new Date();
+  const now = moment().tz('Asia/Tashkent').toDate();
   const workerId = ctx.session.workerId;
   
   if (!workerId) {
     return ctx.reply('Iltimos, avval profilni tanlang.');
   }
 
-  const shiftStart = new Date();
-  shiftStart.setHours(workers[workerId].startHour, 0, 0, 0);
+  const shiftStart = moment().tz('Asia/Tashkent').set({ hour: workers[workerId].startHour, minute: 0, second: 0, millisecond: 0 }).toDate();
 
   if (now > shiftStart) {
     const diffMinutes = Math.floor((now - shiftStart) / 60000);
@@ -122,26 +122,18 @@ bot.command('keldim', async (ctx) => {
 });
 
 bot.command('ketdim', async (ctx) => {
-  const now = new Date();
+  const now = moment().tz('Asia/Tashkent').toDate();
   const workerId = ctx.session.workerId;
   
   if (!workerId) {
     return ctx.reply('Iltimos, avval profilni tanlang.');
   }
 
-  const shiftEnd = new Date();
-  shiftEnd.setHours(workers[workerId].endHour, 0, 0, 0);
+  const shiftEnd = moment().tz('Asia/Tashkent').set({ hour: workers[workerId].endHour, minute: 0, second: 0, millisecond: 0 }).toDate();
 
   const lastShift = await Shift.findOne({ workerId }).sort({ startTime: -1 });
 
   if (lastShift && !lastShift.endTime) {
-    if (now < shiftEnd) {
-      const diffMinutes = Math.floor((shiftEnd - now) / 60000);
-      if (diffMinutes > 10) {
-        await ctx.reply(`Ishni erta tugatdingiz. 50,000 so'm jarima.`);
-        lastShift.earlyLeave = true;
-      }
-    }
     lastShift.endTime = now;
     await lastShift.save();
     ctx.reply(`${workerId}-admin, siz ishdan ketdingiz.`);
